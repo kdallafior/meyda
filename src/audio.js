@@ -33,7 +33,7 @@
       console.log('Setting Meyda Source to Microphone');
       _this.meyda.setSource(source);
       console.log('Disconnecting synthesizer');
-      osc1.disconnect();
+      self.synthesizer.osc1.disconnect();
       console.groupEnd();
     };
 
