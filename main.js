@@ -1,63 +1,65 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function () {
-  var self;
-  const Audio = function(bufferSize){
+  var _this;
+  const Audio = function (bufferSize) {
     this.context = new AudioContext();
 
     this.synthesizer = {};
     this.synthesizer.osc1 = this.context.createOscillator();
-    this.synthesizer.osc1.type = "sawtooth";
+    this.synthesizer.osc1.type = 'sawtooth';
     this.synthesizer.osc1.start();
 
     this.meyda = Meyda.createMeydaAnalyzer({
-      audioContext:this.context,
-      source:this.synthesizer.osc1,
-      bufferSize:bufferSize,
-      windowingFunction:"blackman"
+      audioContext: this.context,
+      source: this.synthesizer.osc1,
+      bufferSize: bufferSize,
+      windowingFunction: 'blackman',
     });
-    self = this;
+    _this = this;
   };
 
-  Audio.prototype.setWaveformType = function(type){
-    self.synthesizer.osc1.type = type;
+  Audio.prototype.setWaveformType = function (type) {
+    _this.synthesizer.osc1.type = type;
   };
 
-  Audio.prototype.initializeMicrophoneSampling = function(){
-    console.groupCollapsed("Initializing Microphone Sampling");
-    navigator.getUserMedia = navigator.webkitGetUserMedia || navigator.getUserMedia;
-    var constraints = {video: false, audio: true};
-    var successCallback = function(mediaStream) {
+  Audio.prototype.initializeMicrophoneSampling = function () {
+    console.groupCollapsed('Initializing Microphone Sampling');
+    navigator.getUserMedia = navigator.webkitGetUserMedia ||
+      navigator.getUserMedia;
+    var constraints = { video: false, audio: true };
+    var successCallback = function (mediaStream) {
       console.log('User allowed microphone access.');
       console.log('Initializing AudioNode from MediaStream');
-      var source = self.context.createMediaStreamSource(mediaStream);
+      var source = _this.context.createMediaStreamSource(mediaStream);
       console.log('Setting Meyda Source to Microphone');
-      self.meyda.setSource(source);
+      _this.meyda.setSource(source);
       console.log('Disconnecting synthesizer');
       osc1.disconnect();
       console.groupEnd();
     };
-    var errorCallback = function(err) {
-      console.err("Error: ", err  );
+
+    var errorCallback = function (err) {
+      console.err('Error: ', err);
       console.groupEnd();
     };
-    try{
-      console.log("Asking for permission...");
+
+    try {
+      console.log('Asking for permission...');
       navigator.getUserMedia(
         constraints,
         successCallback,
         errorCallback
       );
     }
-    catch(e){
-      console.log("navigator.getUserMedia failed, trying navigator.mediaDevices.getUserMedia");
+    catch (e) {
       var p = navigator.mediaDevices.getUserMedia(constraints);
       p.then(successCallback);
       p.catch(errorCallback);
     }
   };
 
-  Audio.prototype.get = function(features){
-    return self.meyda.get(features);
+  Audio.prototype.get = function (features) {
+    return _this.meyda.get(features);
   };
 
   module.exports = Audio;
@@ -139,8 +141,10 @@
   scene.add(loudnessLines);
   scene.add(bufferLine);
 
+  let features = null;
+
   function render() {
-    const features = a.get([
+    features = a.get([
       'amplitudeSpectrum',
       'spectralCentroid',
       'spectralRolloff',
@@ -148,81 +152,79 @@
       'rms',
     ]);
     if (features) {
-      if (features) {
-        ffts.pop();
-        ffts.unshift(features.amplitudeSpectrum);
-        const windowedSignalBuffer = a.meyda._m.windowedSignal;
+      ffts.pop();
+      ffts.unshift(features.amplitudeSpectrum);
+      const windowedSignalBuffer = a.meyda._m.windowedSignal;
 
-        // Render Spectrogram
-        for (let i = 0; i < ffts.length; i++) {
-          if (ffts[i]) {
-            let fftslen = ffts[i].length;
-            let geometry = new THREE.Geometry(); // May be a way to reuse this
-            if (fftslen) {
-              for (let j = 0; j < fftslen; j++) {
-                geometry.vertices.push(new THREE.Vector3(-11 + (22 * j / fftslen),
-                -5 + ffts[i][j], -15 - i));
-              }
+      // Render Spectrogram
+      for (let i = 0; i < ffts.length; i++) {
+        if (ffts[i]) {
+          let fftslen = ffts[i].length;
+          let geometry = new THREE.Geometry(); // May be a way to reuse this
+          if (fftslen) {
+            for (let j = 0; j < fftslen; j++) {
+              geometry.vertices.push(new THREE.Vector3(-11 + (22 * j / fftslen),
+              -5 + ffts[i][j], -15 - i));
             }
-
-            lines.add(new THREE.Line(geometry, material));
-            geometry.dispose();
-          }
-        }
-
-        // Render Spectral Centroid Arrow
-        if (features.spectralCentroid) {
-          // SpectralCentroid is an awesome variable name
-          // We're really just updating the x axis
-          centroidArrow.position.set(-11 +
-            (22 * features.spectralCentroid / bufferSize / 2), -6, -15);
-        }
-
-        // Render Spectral Rolloff Arrow
-        if (features.spectralRolloff) {
-          // We're really just updating the x axis
-          rolloffArrow.position.set(
-            -11 + (features.spectralRolloff / 44100 * 22), -6, -15);
-        }
-
-        // Render RMS Arrow
-        if (features.rms) {
-          // We're really just updating the x axis
-          rmsArrow.position.set(-11, -5 + (10 * features.rms), -15);
-        }
-
-        // Render windowed buffer
-        if (windowedSignalBuffer) {
-          let geometry = new THREE.Geometry();
-          for (let i = 0; i < windowedSignalBuffer.length; i++) {
-            geometry.vertices.push(new THREE.Vector3(
-              -11 + 22 * i / windowedSignalBuffer.length,
-              10 + windowedSignalBuffer[i] * 1.5, -35
-            ));
           }
 
-          bufferLine.geometry = geometry;
+          lines.add(new THREE.Line(geometry, material));
           geometry.dispose();
         }
+      }
 
-        // Render loudness
-        if (features.loudness && features.loudness.specific) {
-          for (var i = 0; i < features.loudness.specific.length; i++) {
-            let geometry = new THREE.Geometry();
-            geometry.vertices.push(new THREE.Vector3(
-              -11 + 22 * i / features.loudness.specific.length,
-              -6 + features.loudness.specific[i] * 3,
-              -15
-            ));
-            geometry.vertices.push(new THREE.Vector3(
-              -11 + 22 * i / features.loudness.specific.length + 22 /
-              features.loudness.specific.length,
-              -6 + features.loudness.specific[i] * 3,
-              -15
-            ));
-            loudnessLines.add(new THREE.Line(geometry, yellowMaterial));
-            geometry.dispose();
-          }
+      // Render Spectral Centroid Arrow
+      if (features.spectralCentroid) {
+        // SpectralCentroid is an awesome variable name
+        // We're really just updating the x axis
+        centroidArrow.position.set(-11 +
+          (22 * features.spectralCentroid / bufferSize / 2), -6, -15);
+      }
+
+      // Render Spectral Rolloff Arrow
+      if (features.spectralRolloff) {
+        // We're really just updating the x axis
+        rolloffArrow.position.set(
+          -11 + (features.spectralRolloff / 44100 * 22), -6, -15);
+      }
+
+      // Render RMS Arrow
+      if (features.rms) {
+        // We're really just updating the x axis
+        rmsArrow.position.set(-11, -5 + (10 * features.rms), -15);
+      }
+
+      // Render windowed buffer
+      if (windowedSignalBuffer) {
+        let geometry = new THREE.Geometry();
+        for (let i = 0; i < windowedSignalBuffer.length; i++) {
+          geometry.vertices.push(new THREE.Vector3(
+            -11 + 22 * i / windowedSignalBuffer.length,
+            10 + windowedSignalBuffer[i] * 1.5, -35
+          ));
+        }
+
+        bufferLine.geometry = geometry;
+        geometry.dispose();
+      }
+
+      // Render loudness
+      if (features.loudness && features.loudness.specific) {
+        for (var i = 0; i < features.loudness.specific.length; i++) {
+          let geometry = new THREE.Geometry();
+          geometry.vertices.push(new THREE.Vector3(
+            -11 + 22 * i / features.loudness.specific.length,
+            -6 + features.loudness.specific[i] * 3,
+            -15
+          ));
+          geometry.vertices.push(new THREE.Vector3(
+            -11 + 22 * i / features.loudness.specific.length + 22 /
+            features.loudness.specific.length,
+            -6 + features.loudness.specific[i] * 3,
+            -15
+          ));
+          loudnessLines.add(new THREE.Line(geometry, yellowMaterial));
+          geometry.dispose();
         }
       }
 
