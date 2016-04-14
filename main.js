@@ -196,9 +196,8 @@
       for (let i = 0; i < ffts.length; i++) {
         var positions = lines.children[i].geometry.attributes.position.array;
         var index = 0;
-
         for (var j = 0; j < ffts[i].length*3; j++) {
-          positions[index++] = -11 + (22 * j / ffts[i].length);
+          positions[index++] =  11+3.5*Math.log(j/ffts[i].length);
           positions[index++] = -5 + ffts[i][j];
           positions[index++] = -15 - i;
         }
@@ -210,15 +209,16 @@
       if (features.spectralCentroid) {
         // SpectralCentroid is an awesome variable name
         // We're really just updating the x axis
-        centroidArrow.position.set(-11 +
-          (22 * features.spectralCentroid / bufferSize / 2), -6, -15);
+        centroidArrow.position.set(11+
+          3.5*Math.log(features.spectralCentroid / (bufferSize/2)) , -6, -15);
       }
 
       // Render Spectral Rolloff Arrow
       if (features.spectralRolloff) {
         // We're really just updating the x axis
         rolloffArrow.position.set(
-          -11 + (features.spectralRolloff / 44100 * 22), -6, -15);
+          11 + 3.5*Math.log(features.spectralRolloff/44100), -6, -15);
+          // (features.spectralRolloff / 44100 * 22), -6, -15);
       }
       // Render RMS Arrow
       if (features.rms) {
