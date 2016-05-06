@@ -2,15 +2,16 @@
   'use strict';
 
   // Redirect to https because usermedia doesn't work on insecure origins
-  if (window.location.href !== "https://meyda.surge.sh/"){
-    window.location.href = "https://meyda.surge.sh/";
+  if (window.location.href     !== 'https://meyda.surge.sh/' &&
+      window.location.hostname !== 'localhost') {
+    window.location.href = 'https://meyda.surge.sh/';
   }
 
   const bufferSize = 1024;
   let Audio = require('./audio');
   let a = new Audio(bufferSize);
 
-  var resolution = document.querySelector('hr').offsetWidth/16*10;
+  var resolution = document.querySelector('hr').offsetWidth / 16 * 10;
   var aspectRatio = 16 / 10;
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(40, aspectRatio, 0.1, 1000);
@@ -27,11 +28,11 @@
   };
 
   var material = new THREE.LineBasicMaterial({
-    color: 0x00ff00
+    color: 0x00ff00,
   });
 
   var yellowMaterial = new THREE.LineBasicMaterial({
-    color: 0x00ffff
+    color: 0x00ffff,
   });
 
   var ffts = initializeFFTs(20, bufferSize);
@@ -40,13 +41,14 @@
   var renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio ? window.devicePixelRatio : 1);
   renderer.setSize(resolution * aspectRatio, resolution);
-  window.addEventListener('resize', function(){
+  window.addEventListener('resize', function () {
     let canvasWidth = document.querySelector('hr').offsetWidth;
-    resolution = canvasWidth/16*10;
+    resolution = canvasWidth / 16 * 10;
     renderer.setSize(resolution * aspectRatio, resolution);
     renderer.domElement.height = resolution;
     renderer.domElement.width = canvasWidth;
   });
+
   document.querySelector('#showcase').appendChild(renderer.domElement);
 
   var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
